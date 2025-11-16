@@ -7,16 +7,29 @@
  * See a full list of supported triggers at https://firebase.google.com/docs/functions
  */
 
-// **********************************************
-// ⚠️ CHANGE 1: Import the v1 API for Auth Triggers
-// **********************************************
-const functions = require("firebase-functions/v1");
-// **********************************************
+// const {setGlobalOptions} = require("firebase-functions");
+// const {onRequest} = require("firebase-functions/https");
+// const logger = require("firebase-functions/logger");
 
-// ⚠️ Removed the problematic v2 Auth import here:
-// const {onUserCreated} = require("firebase-functions/v2/auth");
+// For cost control, you can set the maximum number of containers that can be
+// running at the same time. This helps mitigate the impact of unexpected
+// traffic spikes by instead downgrading performance. This limit is a
+// per-function limit. You can override the limit for each function using the
+// `maxInstances` option in the function's options, e.g.
+// `onRequest({ maxInstances: 5 }, (req, res) => { ... })`.
+// NOTE: setGlobalOptions does not apply to functions using the v1 API. V1
+// functions should each use functions.runWith({ maxInstances: 10 }) instead.
+// In the v1 API, each function can only serve one request per container, so
+// this will be the maximum concurrent request count.
+// setGlobalOptions({maxInstances: 10});
 
-// Keeping v2 imports for Storage, as they are supported:
+// functions/index.js
+// Remove: const functions = require("firebase-functions");
+
+// Add these 2nd Gen specific imports at the top
+// const {onAfterCreate} = require("firebase-functions/v2/auth");
+// const functions = require("firebase-functions");
+const {onUserCreated} = require("firebase-functions/v2/auth");
 const {onObjectFinalized, onObjectDeleted} = require("firebase-functions/v2/storage");
 
 const admin = require("firebase-admin");
@@ -26,11 +39,9 @@ admin.initializeApp();// Don't forget this!
 const USER_STORAGE_QUOTA_BYTES = 5 * 1024 * 1024 * 1024; // 5 GB
 
 // Function to create a storage stats document for new users
-// **********************************************
-// ⚠️ CHANGE 2 & 3: Converted to v1 Auth Trigger syntax
-// **********************************************
-exports.initializeUserStorageStats = functions.auth.user().onCreate(async (user) => {
-  // In v1, the user object is passed directly as the first argument
+// exports.initializeUserStorageStats = functions.auth.user().onCreate(async (user) => { ... });
+exports.initializeUserStorageStats = onUserCreated(async (event) => {
+  const user = event.data; // The user object is now in event.data
   const userRef = admin.firestore().collection("userStorageStats").doc(user.uid);
   try {
     await userRef.set({
@@ -45,9 +56,10 @@ exports.initializeUserStorageStats = functions.auth.user().onCreate(async (user)
 });
 
 
-// ... (The rest of your code using v2 for Storage remains the same, which is fine) ...
+// ... (admin.initializeApp() and USER_STORAGE_QUOTA_BYTES from above) ...
 
 // Function to enforce storage quota on new file uploads
+// exports.enforceStorageQuota = functions.storage.object().onFinalize(async (object) => {
 exports.enforceStorageQuota = onObjectFinalized(async (event) => {
   const object = event.data;
   const filePath = object.name; // Full path to the file
@@ -124,6 +136,8 @@ exports.enforceStorageQuota = onObjectFinalized(async (event) => {
   }
 });
 
+// ... (admin.initializeApp() and USER_STORAGE_QUOTA_BYTES from above) ...
+
 // Function to adjust storage quota on file deletions
 exports.adjustStorageQuota = onObjectDeleted(async (event) => {
   const object = event.data;
@@ -178,3 +192,11 @@ exports.adjustStorageQuota = onObjectDeleted(async (event) => {
     return null;
   }
 });
+
+// Create and deploy your first functions
+// https://firebase.google.com/docs/functions/get-started
+
+// exports.helloWorld = onRequest((request, response) => {
+//   logger.info("Hello logs!", {structuredData: true});
+//   response.send("Hello from Firebase!");
+// });
