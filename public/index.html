@@ -33,6 +33,11 @@
     }
   </style>
 </head>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
 <body class="bg-gray-50 font-sans antialiased">
 
   <!-- 
@@ -316,135 +321,472 @@
     =================================
   -->
   <script>
+
+        // --------------------------------------------------------------------------------------
+
+    // 🚀 STEP 1: Import Firebase SDKs (using script tags in the <head> or before this script)
+
+    // For a single HTML file, loading them directly from CDN is common.
+
+    // Place these <script> tags just before your main <script> block or in the <head>.
+
+    // These are essential for `initializeApp`, `getAuth`, `getFirestore`, etc. to work.
+
+    // --------------------------------------------------------------------------------------
+
+    // Add these lines *above* this script block in your HTML,
+
+    // for example, right before your main <script> tag.
+
+    /*
+    */
+
+    // Note: The "compat" versions are easier for older <script> tag usage.
+
+    // For modern modules, you'd use `import` statements as shown in my previous example.
+
+
+    // --------------------------------------------------------------------------------------
+
+    // 🚀 STEP 2: Your web app's Firebase configuration (replace with your actual config!)
+
+    // This is the JS object you get from the Firebase Console after adding your web app.
+
+    // --------------------------------------------------------------------------------------
+
+    const firebaseConfig = {
+     apiKey: "AIzaSyCCAsE-YqMBEcwH85oq5TSvIvL7jFScurA",
+     authDomain: "skillsphere-1e92a.firebaseapp.com",
+     projectId: "skillsphere-1e92a",
+     storageBucket: "skillsphere-1e92a.firebasestorage.app",
+     messagingSenderId: "792599365379",
+     appId: "1:792599365379:web:6899cd79b92a22e1968b36",
+     measurementId: "G-DD3EMQ4CXD"
+    };
+
+
+    // --------------------------------------------------------------------------------------
+
+    // 🚀 STEP 3: Initialize Firebase and get service instances
+
+    // This creates the Firebase app and makes auth and db globally accessible for your script.
+
+    // --------------------------------------------------------------------------------------
+
+    // Initialize Firebase
+
+    const app = firebase.initializeApp(firebaseConfig);
+
+
+    // Get references to the services you need
+
+    const auth = app.auth();               // For Firebase Authentication
+
+    const db = app.firestore();            // For Cloud Firestore
+
+
+    // --------------------------------------------------------------------------------------
+
+    // 🚀 STEP 4: Your existing application logic (remains mostly unchanged)
+
+    // Now, `auth` and `db` are defined and ready to be used by the rest of your script.
+
+    // --------------------------------------------------------------------------------------
+
     document.addEventListener('DOMContentLoaded', () => {
-      
+
+
       // --- PAGE NAVIGATION ---
-      
-      // Get all page elements
+
       const pages = {
+
         signIn: document.getElementById('signInPage'),
+
         signUp: document.getElementById('signUpPage'),
+
         portfolio: document.getElementById('portfolioPage')
+
       };
 
-      // Get navigation buttons
+
       const goToSignUpButton = document.getElementById('goToSignUp');
+
       const goToSignInButton = document.getElementById('goToSignIn');
+
       const logoutButton = document.getElementById('logoutButton');
 
-      // Function to show a page and hide others
+
       function showPage(pageId) {
-        // Hide all pages
+
         for (let page in pages) {
+
           pages[page].classList.add('hidden');
+
         }
-        // Show the target page
+
         pages[pageId].classList.remove('hidden');
+
       }
 
-      // Add event listeners for page navigation
-      goToSignUpButton.addEventListener('click', () => showPage('signUp'));
-      goToSignInButton.addEventListener('click', () => showPage('signIn'));
-      logoutButton.addEventListener('click', () => {
-        // Clear forms on logout
-        document.getElementById('signInForm').reset();
-        document.getElementById('signUpForm').reset();
+
+      goToSignUpButton.addEventListener('click', () => {
+
+        signUpError.classList.add('hidden'); // Clear errors
+
+        signUpSuccess.classList.add('hidden'); // Clear success
+
+        showPage('signUp');
+
+      });
+
+      goToSignInButton.addEventListener('click', () => {
+
+        signInError.classList.add('hidden'); // Clear errors
+
         showPage('signIn');
+
       });
 
-      // --- FORM HANDLING ---
 
-      // Sign-In Form
-      const signInForm = document.getElementById('signInForm');
-      const signInError = document.getElementById('signInError');
-      const userNameSpan = document.getElementById('userName');
+      // --- Firebase Auth State Listener (Crucial for page redirects) ---
 
-      signInForm.addEventListener('submit', (e) => {
-        e.preventDefault(); // Prevent actual form submission
-        signInError.classList.add('hidden'); // Hide error on new submit
-        
-        const email = signInForm.email.value;
-        const password = signInForm.password.value;
+      auth.onAuthStateChanged(async (user) => {
 
-        if (!email || !password) {
-          signInError.textContent = 'Please enter both email and password.';
-          signInError.classList.remove('hidden');
-          return;
-        }
-        
-        // Mock success!
-        // Get user's name (e.g., from email or a profile)
-        const name = email.split('@')[0];
-        userNameSpan.textContent = name.charAt(0).toUpperCase() + name.slice(1);
-        
-        showPage('portfolio');
-      });
+        if (user) {
 
-      // Sign-Up Form
-      const signUpForm = document.getElementById('signUpForm');
-      const signUpError = document.getElementById('signUpError');
-      const signUpSuccess = document.getElementById('signUpSuccess');
+          // User is signed in.
 
-      signUpForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        signUpError.classList.add('hidden');
-        signUpSuccess.classList.add('hidden');
+          const userName = user.displayName || user.email.split('@')[0];
 
-        const name = signUpForm.name.value;
-        const email = signUpForm['email-address-signup'].value;
-        const password = signUpForm['password-signup'].value;
+          document.getElementById('userName').textContent = userName.charAt(0).toUpperCase() + userName.slice(1);
 
-        if (!name || !email || !password) {
-          signUpError.textContent = 'Please fill out all fields.';
-          signUpError.classList.remove('hidden');
-          return;
-        }
+          console.log("User logged in:", user.email, "UID:", user.uid);
 
-        // Mock sign-up success
-        signUpSuccess.textContent = 'Account created successfully! Please sign in.';
-        signUpSuccess.classList.remove('hidden');
 
-        // After 2 seconds, redirect to sign-in
-        setTimeout(() => {
-          signUpForm.reset();
-          showPage('signIn');
-        }, 2000);
-      });
+          // Attempt to get user's Firestore profile to ensure it exists
 
-      // --- TAB NAVIGATION (PORTFOLIO PAGE) ---
-      
-      const tabNav = document.getElementById('tabNav');
-      const tabButtons = tabNav.querySelectorAll('[data-tab-target]');
-      const tabContents = document.getElementById('tabContentContainer').querySelectorAll('[data-tab-content]');
+          // Note: your rules currently only allow admin to read/write to 'users' collection.
 
-      tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-          const targetId = button.dataset.tabTarget;
-          const targetContent = document.getElementById(targetId);
+          // You might want to adjust them to allow users to read/write their own profile:
 
-          // 1. Hide all content
-          tabContents.forEach(content => {
-            content.classList.add('hidden');
-          });
+          // allow read: if request.auth != null && (request.auth.uid == userId || request.auth.token.role == 'admin');
 
-          // 2. Remove "active" class from all buttons
-          tabButtons.forEach(btn => {
-            btn.classList.remove('border-blue-600', 'text-blue-600');
-            btn.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
-          });
-          
-          // 3. Show target content
-          if (targetContent) {
-            targetContent.classList.remove('hidden');
+          // allow write: if request.auth != null && request.auth.uid == userId;
+
+          const userDocRef = db.collection('users').doc(user.uid);
+
+          const userDoc = await userDocRef.get();
+
+
+          if (!userDoc.exists) {
+
+            // If the user profile doesn't exist (e.g., first sign-in after manual creation),
+
+            // create a basic one. This also ensures displayName is set if available.
+
+            await userDocRef.set({
+
+              name: user.displayName || 'Unnamed User',
+
+              email: user.email,
+
+              createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+
+              // Add roles or flags here if you want to initially tag users
+
+              // For now, this is just basic info
+
+            });
+
+            console.log("Created Firestore profile for new user:", user.email);
+
           }
 
-          // 4. Set "active" class on clicked button
-          button.classList.add('border-blue-600', 'text-blue-600');
-          button.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
-        });
+
+          showPage('portfolio');
+
+        } else {
+
+          // User is signed out.
+
+          console.log("User logged out or not signed in.");
+
+          showPage('signIn');
+
+        }
+
       });
 
-    });
+
+      logoutButton.addEventListener('click', () => {
+
+        auth.signOut().then(() => {
+
+          // Sign-out successful. onAuthStateChanged will handle page redirect.
+
+          console.log("User signed out.");
+
+          // Clear forms for next login
+
+          document.getElementById('signInForm').reset();
+
+          document.getElementById('signUpForm').reset();
+
+          signInError.classList.add('hidden');
+
+          signUpError.classList.add('hidden');
+
+          signUpSuccess.classList.add('hidden');
+
+        }).catch((error) => {
+
+          console.error("Error signing out:", error);
+
+          alert("Error signing out: " + error.message); // Basic alert for now
+
+        });
+
+      });
+
+
+      // --- SIGN IN FORM ---
+
+      const signInForm = document.getElementById('signInForm');
+
+      const signInError = document.getElementById('signInError');
+
+
+      signInForm.addEventListener('submit', (e) => {
+
+        e.preventDefault();
+
+        signInError.classList.add('hidden'); // Hide previous error
+
+
+        const email = signInForm['email-address'].value;
+
+        const password = signInForm.password.value;
+
+
+        if (!email || !password) {
+
+          signInError.textContent = 'Please enter both email and password.';
+
+          signInError.classList.remove('hidden');
+
+          return;
+
+        }
+
+
+        auth.signInWithEmailAndPassword(email, password)
+
+          .then((userCredential) => {
+
+            // Signed in successfully. onAuthStateChanged will handle page redirect.
+
+            console.log("User signed in:", userCredential.user.email);
+
+            // Form is reset on successful sign-out, not sign-in here.
+
+          })
+
+          .catch((error) => {
+
+            const errorCode = error.code;
+
+            const errorMessage = error.message;
+
+            console.error("Sign in error:", errorCode, errorMessage);
+
+            signInError.textContent = `Sign-in failed: ${errorMessage}`;
+
+            signInError.classList.remove('hidden');
+
+          });
+
+      });
+
+
+      // --- SIGN UP FORM ---
+
+      const signUpForm = document.getElementById('signUpForm');
+
+      const signUpError = document.getElementById('signUpError');
+
+      const signUpSuccess = document.getElementById('signUpSuccess');
+
+
+      signUpForm.addEventListener('submit', (e) => {
+
+        e.preventDefault();
+
+        signUpError.classList.add('hidden');
+
+        signUpSuccess.classList.add('hidden');
+
+
+        const name = signUpForm['name-signup'].value;
+
+        const email = signUpForm['email-address-signup'].value;
+
+        const password = signUpForm['password-signup'].value;
+
+
+        if (!name || !email || !password) {
+
+          signUpError.textContent = 'Please fill out all fields.';
+
+          signUpError.classList.remove('hidden');
+
+          return;
+
+        }
+
+
+        auth.createUserWithEmailAndPassword(email, password)
+
+          .then(async (userCredential) => {
+
+            const user = userCredential.user;
+
+            console.log("User created:", user.email);
+
+
+            // Set user's display name
+
+            await user.updateProfile({ displayName: name });
+
+
+            // Store user data in Firestore
+
+            // Again, consider your Firestore Security Rules for the 'users' collection.
+
+            await db.collection('users').doc(user.uid).set({
+
+              name: name,
+
+              email: email,
+
+              createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+
+              // Default role for new users. Developers will be updated separately.
+
+              role: 'user'
+
+            });
+
+            console.log("User profile saved to Firestore for UID:", user.uid);
+
+
+            signUpSuccess.textContent = 'Account created successfully! Please sign in.';
+
+            signUpSuccess.classList.remove('hidden');
+
+
+            // Optionally, sign out the new user to force them to sign in again,
+
+            // or let onAuthStateChanged redirect them to portfolio directly.
+
+            // Based on your previous flow, we'll redirect to signIn after a delay.
+
+            setTimeout(() => {
+
+              signUpForm.reset();
+
+              showPage('signIn'); // Go back to sign-in page
+
+            }, 2000);
+
+          })
+
+          .catch((error) => {
+
+            const errorCode = error.code;
+
+            const errorMessage = error.message;
+
+            console.error("Sign up error:", errorCode, errorMessage);
+
+            signUpError.textContent = `Sign-up failed: ${errorMessage}`;
+
+            signUpError.classList.remove('hidden');
+
+          });
+
+      });
+
+
+      // --- TAB NAVIGATION (PORTFOLIO PAGE) ---
+
+      // ... your existing tab navigation code goes here, unchanged ...
+
+      const tabNav = document.getElementById('tabNav');
+
+      const tabButtons = tabNav.querySelectorAll('[data-tab-target]');
+
+      const tabContents = document.getElementById('tabContentContainer').querySelectorAll('[data-tab-content]');
+
+
+      tabButtons.forEach(button => {
+
+        button.addEventListener('click', () => {
+
+          const targetId = button.dataset.tabTarget;
+
+          const targetContent = document.getElementById(targetId);
+
+
+          // 1. Hide all content
+
+          tabContents.forEach(content => {
+
+            content.classList.add('hidden');
+
+          });
+
+
+          // 2. Remove "active" class from all buttons
+
+          tabButtons.forEach(btn => {
+
+            btn.classList.remove('border-blue-600', 'text-blue-600');
+
+            btn.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+
+          });
+
+
+          // 3. Show target content
+
+          if (targetContent) {
+
+            targetContent.classList.remove('hidden');
+
+          }
+
+
+          // 4. Set "active" class on clicked button
+
+          button.classList.add('border-blue-600', 'text-blue-600');
+
+          button.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+
+        });
+
+      });
+
+
+      // Default to showing the sign-in page on load if no user is authenticated
+
+      // This is handled by onAuthStateChanged now, but a fallback is good.
+
+      // showPage('signIn'); // Remove this, onAuthStateChanged will manage initial state.
+
+
+    }); // End of DOMContentLoaded
+
+
   </script>
 
 </body>
